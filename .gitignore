@@ -1,0 +1,4 @@
+[._]tmp/
+node_modules/
+
+.env

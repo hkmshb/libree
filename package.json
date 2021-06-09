@@ -1,0 +1,13 @@
+{
+  "name": "libree",
+  "version": "0.1.0",
+  "description": "Scripts for managing my digital library assets",
+  "author": "Hazeltek Solutions <http://hazeltek.com>",
+  "license": "ISC",
+  "scripts": {},
+  "devDependencies": {
+    "dotenv": "^10.0.0",
+    "grunt": "^1.4.0",
+    "grunt-couchdb": "^1.0.4"
+  }
+}

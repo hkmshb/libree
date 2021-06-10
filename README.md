@@ -27,11 +27,12 @@ Use the `libree/main.go` script to manage records within the `libree` database. 
 output for `--help` flag for the script:
 
 ```sh
-$ run go libree/main.go --help
+Usage: libree [OPTIONS] COMMANDS
 
-Usage: libree [OPTIONS] ...
-  -d string
-        Path to directory to process
-  -u string
-        Target API service url (default "http://localhost:5984/libree")
+Options:
+  -h, --help    Show this message and exit (false)
+
+Commands:
+  index   Index entries to the database
+  trim    Remove duplicate entries from filesystem and database
 ```

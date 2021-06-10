@@ -103,7 +103,7 @@ func displayUsage(cmdText string, description string, cmd *flag.FlagSet) {
 
 func handleIndex() error {
 	cmd := flag.NewFlagSet("index", flag.ExitOnError)
-	cmd.BoolVarP(&config.help, "help", "h", false, "show this message and exit")
+	cmd.BoolVarP(&config.help, "help", "h", false, "Show this message and exit")
 	cmd.StringVarP(&config.apiEndpoint, "url", "u", ServiceUrl, "url to api endpoint")
 
 	cmd.Usage = func() {
@@ -179,7 +179,7 @@ func handleIndex() error {
 
 func handleTrim() error {
 	cmd := flag.NewFlagSet("trim", flag.ExitOnError)
-	cmd.BoolVarP(&config.help, "help", "h", false, "show this message and exit")
+	cmd.BoolVarP(&config.help, "help", "h", false, "Show this message and exit")
 	cmd.StringVarP(&config.excludePattern, "exclude", "x", "", "pattern for files to exclude")
 
 	cmd.Usage = func() {
@@ -202,7 +202,7 @@ func main() {
 		"trim":  "Remove duplicate entries from filesystem and database",
 	}
 
-	flag.BoolVarP(&config.help, "help", "h", false, "show this message and exit")
+	flag.BoolVarP(&config.help, "help", "h", false, "Show this message and exit")
 	flag.Usage = func() {
 		displayUsage("[OPTIONS] COMMANDS", "", flag.CommandLine)
 

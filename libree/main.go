@@ -5,18 +5,21 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"io/fs"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
+
+	flag "github.com/spf13/pflag"
 )
 
 const (
+	Program     = "libree"
 	ServiceName = "mega"
 	ServiceUrl  = "http://localhost:5984/libree"
 )
@@ -72,22 +75,66 @@ func (s Service) Post(f *FileDoc) {
 	defer res.Body.Close()
 }
 
-func main() {
-	// define flags
-	apiUrl := flag.String("u", ServiceUrl, "Target API service url")
-	directory := flag.String("d", "", "Path to directory to process")
-	flag.Parse()
+var config struct {
+	apiEndpoint    string
+	directory      string
+	excludePattern string
+	help           bool
+}
 
-	Url, err := url.Parse(*apiUrl)
+func displayUsage(cmdText string, description string, cmd *flag.FlagSet) {
+	fmt.Fprintf(os.Stderr, "Usage: %s %s", Program, cmdText)
+	if description != "" {
+		fmt.Fprint(os.Stderr, "\n\n", description)
+	}
+
+	fmt.Fprintln(os.Stderr, "\n\nOptions:")
+	cmd.VisitAll(func(f *flag.Flag) {
+		args := []string{f.Shorthand, f.Name}
+		if f.DefValue == "" {
+			args = append(args, f.Usage)
+		} else {
+			args = append(args, fmt.Sprintf("%s (%s)", f.Usage, f.DefValue))
+		}
+
+		fmt.Fprintf(os.Stderr, "  -%s, --%-7s %s\n", args[0], args[1], args[2])
+	})
+}
+
+func handleIndex() error {
+	cmd := flag.NewFlagSet("index", flag.ExitOnError)
+	cmd.BoolVarP(&config.help, "help", "h", false, "show this message and exit")
+	cmd.StringVarP(&config.apiEndpoint, "url", "u", ServiceUrl, "url to api endpoint")
+
+	cmd.Usage = func() {
+		displayUsage("index directory [OPTIONS]", "Index entries to the database", cmd)
+	}
+
+	cmd.Parse(os.Args[2:])
+	if cmd.NArg() != 1 || config.help {
+		if !config.help {
+			fmt.Fprint(os.Stderr, "error: directory argument missing\n\n")
+		}
+
+		cmd.Usage()
+		os.Exit(0)
+	}
+
+	Url, err := url.Parse(config.apiEndpoint)
 	if err != nil {
-		log.Fatal((err))
+		log.Fatal(err)
+	}
+
+	config.directory = os.ExpandEnv(cmd.Args()[0])
+	if _, err := os.Stat(config.directory); os.IsNotExist(err) {
+		log.Fatal(err)
 	}
 
 	service := Service{Url: Url, Username: "admin", Password: "c0uch"}
 	stats := make(map[string]int)
 	count := 0
 
-	filepath.WalkDir(*directory, func(path string, entry fs.DirEntry, err error) error {
+	filepath.WalkDir(config.directory, func(path string, entry fs.DirEntry, err error) error {
 		if entry.IsDir() {
 			return nil
 		}
@@ -122,7 +169,65 @@ func main() {
 	})
 
 	data, err := json.MarshalIndent(stats, "", "  ")
-	if err == nil {
-		fmt.Println(string(data))
+	if err != nil {
+		return err
 	}
+
+	fmt.Println(string(data))
+	return nil
+}
+
+func handleTrim() error {
+	cmd := flag.NewFlagSet("trim", flag.ExitOnError)
+	cmd.BoolVarP(&config.help, "help", "h", false, "show this message and exit")
+	cmd.StringVarP(&config.excludePattern, "exclude", "x", "", "pattern for files to exclude")
+
+	cmd.Usage = func() {
+		displayUsage("trim [OPTIONS]", "Remove duplicate entries from filesystem and database", cmd)
+	}
+
+	cmd.Parse(os.Args[2:])
+	if config.help {
+		cmd.Usage()
+		os.Exit(0)
+	}
+
+	log.Fatal("Not implemented!")
+	return nil
+}
+
+func main() {
+	commands := map[string]string{
+		"index": "Index entries to the database",
+		"trim":  "Remove duplicate entries from filesystem and database",
+	}
+
+	flag.BoolVarP(&config.help, "help", "h", false, "show this message and exit")
+	flag.Usage = func() {
+		displayUsage("[OPTIONS] COMMANDS", "", flag.CommandLine)
+
+		fmt.Fprintln(os.Stderr, "\nCommands:")
+		for cmd, usage := range commands {
+			fmt.Fprintf(os.Stderr, "  %-7s %s\n", cmd, usage)
+		}
+		fmt.Fprintln(os.Stderr, "")
+	}
+
+	flag.Parse()
+	if flag.NArg() == 0 || (flag.NArg() == 0 && config.help) {
+		flag.Usage()
+		os.Exit(0)
+	}
+
+	if _, ok := commands[os.Args[1]]; ok {
+		switch os.Args[1] {
+		case "index":
+			handleIndex()
+		case "trim":
+			handleTrim()
+		}
+		return
+	}
+
+	flag.Usage()
 }
